@@ -1,0 +1,69 @@
+# Test configuration: 5 genomes, PHASTEST off. Run: snakemake --sdm conda --cores 8 --configfile .tests/config_test.yaml
+# Comparative genomics of lactic acid bacteria, following the Ortakci-group pipeline.
+# Edit this file (and config/genomes.tsv) for a new species; nothing else needs to change.
+
+# Input genomes: one NCBI assembly accession per row; see config/genomes.tsv.
+genomes: .tests/genomes_test.tsv
+# Focal strain highlighted in figures, BRIG reference and strain-specific gene tables.
+focal: GCA_020124705.2
+
+species:
+  genus: Liquorilactobacillus
+  species: nagelii
+
+qc:
+  busco_lineage: lactobacillales_odb10   # Gumustop & Ortakci 2022; Kurt et al. 2026
+  min_busco_complete: 98                 # 98 in the 2025-2026 papers, 95 in 2022
+  # Assemblies to drop before QC (e.g. duplicate assemblies of one strain).
+  exclude: []
+
+ani:
+  species_threshold: 95
+  clonal_threshold: 99.9                 # single-linkage clustering for clonal groups
+
+pangenome:
+  roary_identity: 95                     # Roary -i
+  roary_core: 100                        # Roary -cd (core = 100% of strains)
+  heaps_permutations: 1000               # micropan
+
+phylogeny:
+  gubbins: true                          # recombination filtering (Linux only; segfaults on Apple Silicon)
+
+cazy:
+  evalue: 1.0e-15                        # Gumustop & Ortakci 2022
+  coverage: 0.35
+
+plsdb:
+  # PLSDB 2024_05_31_v2 mash sketch (Figshare 10.6084/m9.figshare.27252609)
+  sketch_url: https://ndownloader.figshare.com/files/49859763
+  nuccore_url: https://ndownloader.figshare.com/files/49859742
+  taxonomy_url: https://ndownloader.figshare.com/files/49859727
+  min_identity: 0.99
+  max_pvalue: 0.1
+  present_hash_fraction: 0.5
+
+phastest:
+  enabled: false                         # test run: do not load the public PHASTEST server
+  poll_minutes: 240
+
+bagel4:
+  # BAGEL4 has no API. Run the genomes on bagel4.molgenrug.nl (<= 40 per session), then list the
+  # session ids shown by the page (JavaScript variable sessionID) here; the pipeline collects the results.
+  sessions: []
+
+# Map isolation_source keywords (lower case) to a niche label for figures. First match wins.
+niches:
+  - [shalgam, "Shalgam"]
+  - [turnip, "Shalgam"]
+  - [kefir, "Water kefir"]
+  - [wine, "Wine"]
+  - [napa, "Wine"]
+  - [bioreactor, "Anaerobic bioreactor"]
+  - [kombucha, "Kombucha"]
+  - [feces, "Animal feces"]
+default_niche: "Other"
+
+ai_report:
+  enabled: false                         # needs Anthropic credentials (ANTHROPIC_API_KEY or `ant auth login`)
+  model: claude-opus-5-5
+  effort: high

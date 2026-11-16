@@ -1,0 +1,23 @@
+# Comparative genomics of lactic acid bacteria, following the Ortakci-group pipeline
+# (Gumustop & Ortakci 2022 BMC Genomics; 2023 CSBJ; Gumustop et al. 2025 PLoS One; Kasapoglu et al. 2026 Sci Rep; Kurt et al. 2026 BMC Genomics).
+# Run: snakemake --sdm conda --cores 8        (see README.md)
+
+configfile: "config/config.yaml"
+
+
+include: "rules/common.smk"
+include: "rules/download.smk"
+include: "rules/qc.smk"
+include: "rules/ani.smk"
+include: "rules/annotation.smk"
+include: "rules/pangenome.smk"
+include: "rules/phylogeny.smk"
+include: "rules/function.smk"
+include: "rules/mobilome.smk"
+include: "rules/safety.smk"
+include: "rules/report.smk"
+
+
+rule all:
+    input:
+        final_targets,

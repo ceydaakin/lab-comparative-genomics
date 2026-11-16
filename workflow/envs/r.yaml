@@ -1,0 +1,16 @@
+channels:
+  - conda-forge
+  - bioconda
+  - nodefaults
+dependencies:
+  - r-base=4.4
+  - r-prabclus
+  - r-ape
+  - r-igraph
+  - r-data.table
+  - r-matrix
+  - r-dplyr
+  - r-stringr
+  - r-tibble
+  - r-rcpp
+  - compilers

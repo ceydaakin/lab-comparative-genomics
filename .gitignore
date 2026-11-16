@@ -1,0 +1,9 @@
+results/
+resources/
+logs/
+.snakemake/
+.test_run/
+__pycache__/
+*.pyc
+.DS_Store
+.test_*.log

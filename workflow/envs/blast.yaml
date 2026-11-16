@@ -1,0 +1,11 @@
+channels:
+  - conda-forge
+  - bioconda
+  - nodefaults
+dependencies:
+  - blast>=2.15
+  - python=3.12
+  - biopython
+  - pandas
+  - numpy
+  - matplotlib
