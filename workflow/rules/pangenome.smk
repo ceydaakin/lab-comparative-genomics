@@ -35,9 +35,10 @@ rule micropan_prabclus:
         pcoa="results/pangenome/micropan/pcoa_jaccard.tsv",
     params:
         nperm=config["pangenome"]["heaps_permutations"],
+        scripts=SCRIPTS,
     log:
         "logs/micropan.log",
     conda:
         "../envs/r.yaml"
     shell:
-        "Rscript {SCRIPTS}/micropan_prabclus.R {input} results/pangenome/micropan {params.nperm} > {log} 2>&1"
+        "Rscript {params.scripts}/micropan_prabclus.R {input} results/pangenome/micropan {params.nperm} > {log} 2>&1"

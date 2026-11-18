@@ -22,7 +22,10 @@ rule clonal_groups:
         groups="results/ani/clonal_groups.tsv",
     params:
         clonal=config["ani"]["clonal_threshold"],
+        scripts=SCRIPTS,
+    log:
+        "logs/clonal_groups.log",
     conda:
         "../envs/python.yaml"
     shell:
-        "python {SCRIPTS}/clonal_groups.py --skani {input.edges} --genomes {input.set} --clonal {params.clonal} --matrix {output.matrix} --groups {output.groups}"
+        "python {params.scripts}/clonal_groups.py --skani {input.edges} --genomes {input.set} --clonal {params.clonal} --matrix {output.matrix} --groups {output.groups} > {log} 2>&1"

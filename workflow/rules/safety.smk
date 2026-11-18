@@ -39,12 +39,11 @@ rule rgi_merge:
         per_genome("results/rgi/{acc}.txt"),
     output:
         "results/rgi/rgi_all.tsv",
-    run:
-        rows = []
-        for f in input:
-            t = pd.read_csv(f, sep="\t")
-            acc = os.path.basename(f)[:-4]
-            rows += [{"accession": acc, "cut_off": r["Cut_Off"], "best_hit": r["Best_Hit_ARO"], "identity": r["Best_Identities"],
-                      "drug_class": r["Drug Class"], "mechanism": r["Resistance Mechanism"], "gene_family": r["AMR Gene Family"]}
-                     for _, r in t.iterrows()]
-        pd.DataFrame(rows, columns=["accession", "cut_off", "best_hit", "identity", "drug_class", "mechanism", "gene_family"]).to_csv(output[0], sep="\t", index=False)
+    params:
+        scripts=SCRIPTS,
+    log:
+        "logs/rgi_merge.log",
+    conda:
+        "../envs/python.yaml"
+    shell:
+        "python {params.scripts}/rgi_merge.py --reports {input} --out {output} > {log} 2>&1"

@@ -11,7 +11,7 @@ The group's papers:
 |---|---|---|---|---|
 | QC | BUSCO, lactobacillales_odb10 | BUSCO 6.1 | complete ≥ 98% (P25, K26); 95% in P22 | `qc.min_busco_complete` |
 | ANI | GET_HOMOLOGUES CDS-ANI, 95–96% | skani | species 95%; clonal 99.9% | GET_HOMOLOGUES not installable on current bioconda |
-| dDDH | TYGS | not run | – | web form needs an e-mail |
+| dDDH | TYGS | TYGS web, collected by job GUID | d4, species cut-off 70% | submission form needs an e-mail |
 | Annotation | Prokka 1.14.x | Prokka 1.14.6 | `--kingdom Bacteria` | |
 | Pangenome | Roary 3.13.0 (-e -n -v -r), 95% | Roary 3.13.0 | `-i 95 -cd 100` | `-r` plots replaced by our figures |
 | Openness | micropan Heaps' law, 10,000 permutations | micropan 2.1 (CRAN) | α < 1 = open | |

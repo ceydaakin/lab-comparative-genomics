@@ -33,7 +33,10 @@ rule metadata:
     params:
         niches=json.dumps(config["niches"]),
         default=config["default_niche"],
+        scripts=SCRIPTS,
+    log:
+        "logs/metadata.log",
     conda:
         "../envs/python.yaml"
     shell:
-        "python {SCRIPTS}/metadata.py --report {input} --niches '{params.niches}' --default-niche '{params.default}' --out {output}"
+        "python {params.scripts}/metadata.py --report {input} --niches '{params.niches}' --default-niche '{params.default}' --out {output} > {log} 2>&1"

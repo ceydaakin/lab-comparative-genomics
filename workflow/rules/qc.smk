@@ -1,6 +1,3 @@
-LINEAGE = config["qc"]["busco_lineage"]
-
-
 rule busco_lineage:
     output:
         directory(f"resources/busco/lineages/{LINEAGE}"),
@@ -42,11 +39,16 @@ checkpoint qc_select:
     params:
         cut=config["qc"]["min_busco_complete"],
         exclude=" ".join(config["qc"].get("exclude", [])),
+        scripts=SCRIPTS,
+        focal=FOCAL,
+    log:
+        "logs/qc_select.log",
     conda:
         "../envs/python.yaml"
     shell:
         """
-        python {SCRIPTS}/busco_select.py --summaries {input.jsons} --metadata {input.meta} --min-complete {params.cut} \
-            --exclude {params.exclude} --focal {FOCAL} --table {output.table} --set {output.set}
+        exec > {log} 2>&1
+        python {params.scripts}/busco_select.py --summaries {input.jsons} --metadata {input.meta} --min-complete {params.cut} \
+            --exclude {params.exclude} --focal {params.focal} --table {output.table} --set {output.set}
         echo {params.cut} > {output.cut}
         """

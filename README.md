@@ -19,11 +19,13 @@ First applied to *Liquorilactobacillus nagelii* (46 NCBI genomes, focal strain A
 | CRISPR-Cas | MinCED arrays; Cas typing against NCBI PGAP Cas proteins | `results/crispr/` |
 | Prophages | PHASTEST (public API) | `results/phastest/` |
 | Bacteriocins | BAGEL4 (web; sessions collected by id) | `results/bagel4/` |
+| dDDH species check | TYGS (web; jobs collected by GUID) | `results/tygs/` |
 | IS elements | ISEScan (ISfinder families) | `results/isescan/` |
 | AMR | RGI + CARD (Strict/Perfect) | `results/rgi/` |
 | Plasmids | mash screen vs PLSDB 2024_05_31_v2 | `results/plsdb/` |
 | Genome comparison | BLASTn rings in the BRIG manner against the focal strain | `results/figures/fig10_brig.*`, `results/brig/` |
 | Report | One folder per tool with its tables and `figures/` (PNG 300 dpi + PDF); `Supplementary_Tables.xlsx`, `key_numbers.json` | **`results/paper/<NN_tool>/`** |
+| Hand-off zip | `00_README.txt` + `Figures/` (PNG, descriptive names) + `Tables/` (Table 1 + supplementary workbook with a Contents sheet) | `results/deliverable/<Genus>_<species>_results.zip` |
 | AI draft (optional) | Claude writes Results + figure legends from `key_numbers.json` only | `results/report/results_draft.md` |
 
 `docs/tools.md` maps each step to the paper it comes from and gives every threshold.
@@ -53,12 +55,23 @@ Test run (5 genomes, PHASTEST off): `snakemake --sdm conda --cores 8 --configfil
   2. Copy each session id (the page's `sessionID` variable) into `bagel4.sessions`.
   3. Rerun; the pipeline collects and parses the results.
 
+- **TYGS:** has no submission API and needs an e-mail.
+  1. Submit `resources/genomes/*.fna` on tygs.dsmz.de (up to 50 genomes per job).
+  2. Copy the job GUID from the result link into `tygs.jobs`.
+  3. Rerun to collect the dDDH table, the PDF report and the figure.
+
+## Tests and CI
+- **Unit tests:** `python -m pytest .tests/unit -q` covers the parsers that have broken before (BAGEL4 score/name pairs, accession recovery, Cas typing, TYGS cells). Each test was checked by mutation: breaking the function makes it fail.
+- **Lint:** `snakemake --lint --configfile .tests/config_test.yaml` is clean.
+- **CI:** GitHub Actions (`.github/workflows/ci.yml`) runs the unit tests, the lint and a dry run on every push.
+- **End-to-end:** the full test run (5 genomes) is done locally in a `linux/amd64` container; see "Run" above.
+
 ### Optional AI report
 Set `ai_report.enabled: true`. Credentials come from `ANTHROPIC_API_KEY` or an `ant auth login` profile. Claude receives only `key_numbers.json` (numbers the pipeline computed) and is told not to cite anything else. The output is a draft for expert review, marked as such. Each run is a billed API call. `python workflow/scripts/ai_report.py ... --dry-run` prints the prompt without calling the API.
 
 ## Known limitations
 - **Apple Silicon:** Prokka and Gubbins have no working builds there, so run on Linux. Docker works on a Mac via `--platform linux/amd64`.
-- **Tools not reproduced locally:** TYGS (dDDH), eggNOG-mapper/KAAS and CRISPRCasFinder are web forms that need an e-mail address or have no API. GET_HOMOLOGUES does not install on current bioconda; skani ANI is used instead.
+- **Tools not reproduced locally:** eggNOG-mapper/KAAS and CRISPRCasFinder are web forms that need an e-mail address or have no API (TYGS and BAGEL4 are collected by job id, see above). GET_HOMOLOGUES does not install on current bioconda; skani ANI is used instead.
 - **PHASTEST input:** the API rejects multi-FASTA uploads, so contigs are joined with 100-N spacers and region coordinates are mapped back to the contigs.
 
 ## Layout

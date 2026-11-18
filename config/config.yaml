@@ -50,6 +50,11 @@ bagel4:
   # session ids shown by the page (JavaScript variable sessionID) here; the pipeline collects the results.
   sessions: []
 
+tygs:
+  # TYGS (tygs.dsmz.de) needs an e-mail on its web form and has no submission API. Submit resources/genomes/*.fna there
+  # (<= 50 genomes per job), then list each job GUID (from the result link) here; the pipeline collects the dDDH results.
+  jobs: []
+
 # Map isolation_source keywords (lower case) to a niche label for figures. First match wins.
 niches:
   - [shalgam, "Shalgam"]

@@ -256,6 +256,25 @@ def fig_plsdb():
     ax.spines[:].set_visible(False); ax.set_title("PLSDB plasmids detected (mash screen)", loc="left"); save(fig, "fig15_plsdb")
 
 
-ALL = ["busco", "tree_ani", "ani", "prokka", "pan", "pcoa", "cog", "crispr", "cazy", "prophage", "is", "bagel4", "rgi", "plsdb"]
+
+def fig_tygs():
+    f = f"{R}/tygs/tygs_species_identification.tsv"
+    if not os.path.exists(f) or pd.read_csv(f, sep="\t").empty: return
+    ident = pd.read_csv(f, sep="\t").set_index("genome").reindex(ORDER)
+    m = pd.read_csv(f"{R}/tygs/tygs_dddh_d4_matrix.tsv", sep="\t", index_col=0).reindex(index=ORDER, columns=ORDER)
+    fig, (a1, a2) = plt.subplots(1, 2, figsize=(14, max(4, 0.2 * len(ORDER) + 2)), gridspec_kw={"width_ratios": [1.35, 1]})
+    im = a1.imshow(m.values, cmap="Blues", vmin=70, vmax=100, aspect="auto")
+    a1.set_xticks([]); a1.set_yticks(range(len(ORDER))); a1.set_yticklabels([lab(a) for a in ORDER], fontsize=6); bold(a1, ORDER)
+    plt.colorbar(im, ax=a1, fraction=0.04, label="dDDH d4 (%)")
+    a1.set_title(f"A. Pairwise dDDH (TYGS, d4); min {m.where(m < 100).min().min():.1f}%", loc="left")
+    y = np.arange(len(ORDER))[::-1]
+    a2.barh(y, ident.digital_ddh_d4, color=[CAT[1] if a == FOCAL else CAT[0] for a in ORDER], height=0.7)
+    a2.axvline(70, color="#e34948", ls="--", lw=1); a2.text(70.5, len(ORDER) - 0.5, "70% species cut-off", color="#e34948", fontsize=7)
+    a2.set_yticks(y); a2.set_yticklabels([lab(a) for a in ORDER], fontsize=6); bold(a2, ORDER); a2.set_xlim(min(60, ident.digital_ddh_d4.min() - 5), 100)
+    a2.set_xlabel("dDDH d4 to the closest type strain (%)")
+    a2.set_title("B. Closest type strain: " + "; ".join(sorted(set(ident.type_strain.dropna()))), loc="left", fontsize=8)
+    save(fig, "fig16_tygs_dddh")
+
+ALL = ["busco", "tree_ani", "ani", "prokka", "pan", "pcoa", "cog", "crispr", "cazy", "prophage", "is", "bagel4", "rgi", "plsdb", "tygs"]
 for name in (A.names or ALL):
     globals()[f"fig_{name}"](); print("figure", name)

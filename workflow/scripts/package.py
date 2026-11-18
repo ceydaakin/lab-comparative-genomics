@@ -9,7 +9,7 @@ A = ap.parse_args(); R = A.results
 # folder -> (tables/patterns to copy, figure stems)
 LAYOUT = {
     "01_QC_BUSCO": (["qc/busco_table.tsv"], ["figS1_busco"]),
-    "02_ANI_skani": (["ani/ani_matrix.tsv", "ani/clonal_groups.tsv"], ["fig12_ani_heatmap"]),
+    "02_ANI_skani_TYGS": (["ani/ani_matrix.tsv", "ani/clonal_groups.tsv", "tygs/*.tsv", "tygs/*.pdf"], ["fig12_ani_heatmap", "fig16_tygs_dddh"]),
     "03_annotation_Prokka": (["prokka/*/*.txt"], ["fig11_prokka_annotation"]),
     "04_pangenome_Roary_micropan_prabclus": (["roary/summary_statistics.txt", "roary/gene_presence_absence.csv", "roary/gene_presence_absence.Rtab",
                                               "pangenome/micropan/*.tsv"], ["fig2_pan_core", "fig3_pcoa"]),

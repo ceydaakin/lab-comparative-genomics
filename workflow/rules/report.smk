@@ -1,26 +1,17 @@
-import glob
-
-
-def report_inputs(wildcards):
-    i = ["results/qc/busco_table.tsv", "results/ani/ani_matrix.tsv", "results/ani/clonal_groups.tsv", "results/phylogeny/core_fasttree.nwk",
-         "results/pangenome/micropan/heaps.tsv", "results/roary/gene_presence_absence.csv", "results/cog/cog_by_set.tsv",
-         "results/crispr/crispr_cas.tsv", "results/cazy/cazy_family_counts.tsv", "results/rgi/rgi_all.tsv",
-         "results/plsdb/plsdb_hits.tsv", "results/bagel4/bagel4_summary.tsv"]
-    i += expand("results/isescan/{acc}.tsv", acc=analysis_set())
-    if config["phastest"]["enabled"]:
-        i.append("results/phastest/regions.tsv")
-    return i
-
-
 rule figures:
     input:
         report_inputs,
     output:
         "results/figures/fig1_tree_ani.png",
+    params:
+        scripts=SCRIPTS,
+        focal=FOCAL,
+    log:
+        "logs/figures.log",
     conda:
         "../envs/python.yaml"
     shell:
-        "python {SCRIPTS}/figures.py --results results --focal {FOCAL} --out results/figures"
+        "python {params.scripts}/figures.py --results results --focal {params.focal} --out results/figures > {log} 2>&1"
 
 
 rule tables:
@@ -30,14 +21,16 @@ rule tables:
     output:
         xlsx="results/report/Supplementary_Tables.xlsx",
         numbers="results/report/key_numbers.json",
+        table1="results/report/Table1_genome_features.xlsx",
+    params:
+        scripts=SCRIPTS,
+        focal=FOCAL,
+    log:
+        "logs/tables.log",
     conda:
         "../envs/python.yaml"
     shell:
-        "python {SCRIPTS}/tables.py --results results --focal {FOCAL} --xlsx {output.xlsx} --json {output.numbers}"
-
-
-TOOLS = ["BUSCO 6.1", "skani", "Prokka 1.14.6", "Roary 3.13.0", "micropan", "prabclus", "FastTree 2", "Gubbins", "rpsblast vs NCBI COG",
-         "dbCAN HMMs", "MinCED", "PHASTEST", "BAGEL4", "ISEScan", "RGI/CARD", "PLSDB (mash screen)", "BLASTn BRIG-method rings"]
+        "python {params.scripts}/tables.py --results results --focal {params.focal} --xlsx {output.xlsx} --json {output.numbers} --table1 {output.table1} > {log} 2>&1"
 
 
 rule ai_report:
@@ -52,10 +45,13 @@ rule ai_report:
                                    "figures": sorted(os.path.basename(f)[:-4] for f in glob.glob("results/figures/*.png"))}),
         model=config["ai_report"]["model"],
         effort=config["ai_report"]["effort"],
+        scripts=SCRIPTS,
+    log:
+        "logs/ai_report.log",
     conda:
         "../envs/ai.yaml"
     shell:
-        "python {SCRIPTS}/ai_report.py --numbers {input.numbers} --config '{params.cfg}' --model {params.model} --effort {params.effort} --out {output}"
+        "python {params.scripts}/ai_report.py --numbers {input.numbers} --config '{params.cfg}' --model {params.model} --effort {params.effort} --out {output} > {log} 2>&1"
 
 
 rule package:
@@ -66,7 +62,29 @@ rule package:
         "results/brig/focal_unique_regions.tsv",
     output:
         directory("results/paper"),
+    params:
+        scripts=SCRIPTS,
+    log:
+        "logs/package.log",
     conda:
         "../envs/python.yaml"
     shell:
-        "python {SCRIPTS}/package.py --results results --out {output}"
+        "python {params.scripts}/package.py --results results --out {output} > {log} 2>&1"
+
+
+rule deliverable:
+    """Hand-off zip for collaborators: 00_README.txt, Figures/ (PNG, descriptive names), Tables/ (Table 1 + supplementary workbook)."""
+    input:
+        "results/paper",
+        "results/report/Table1_genome_features.xlsx",
+    output:
+        f"{DELIVERABLE}.zip",
+    params:
+        species=SPECIES,
+        scripts=SCRIPTS,
+    log:
+        "logs/deliverable.log",
+    conda:
+        "../envs/python.yaml"
+    shell:
+        "python {params.scripts}/deliverable.py --results results --species '{params.species}' --zip {output} > {log} 2>&1"

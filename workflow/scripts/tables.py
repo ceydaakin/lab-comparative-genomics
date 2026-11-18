@@ -6,7 +6,7 @@ from scipy.stats import mannwhitneyu
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--results", default="results"); ap.add_argument("--focal", required=True)
-ap.add_argument("--xlsx", required=True); ap.add_argument("--json", required=True)
+ap.add_argument("--xlsx", required=True); ap.add_argument("--json", required=True); ap.add_argument("--table1", required=True)
 A = ap.parse_args(); R = A.results; F = A.focal
 G = [l.strip() for l in open(f"{R}/qc/genome_set.txt") if l.strip()]
 meta = pd.read_csv(f"{R}/metadata.tsv", sep="\t").set_index("accession")
@@ -81,10 +81,47 @@ if iss:
     isd = pd.concat(iss); sheets["S14 IS elements"] = isd; n = isd.groupby("accession").size().reindex(G, fill_value=0)
     k["is_elements"] = {"median_per_genome": float(n.median()), "range": [int(n.min()), int(n.max())], "focal_total": int(n.get(F, 0)),
                         "focal_families": isd[isd.accession == F].family.value_counts().to_dict()}
+ty = opt(f"{R}/tygs/tygs_species_identification.tsv")
+if ty is not None and len(ty):
+    sheets["S15 TYGS dDDH"] = ty
+    k["tygs"] = {"coverage": open(f"{R}/tygs/coverage.txt").read().strip(), "species_calls": ty.species_call.value_counts().to_dict(),
+                 "d4_range_to_type_strain": [float(ty.digital_ddh_d4.min()), float(ty.digital_ddh_d4.max())],
+                 "focal_d4": ty.set_index("genome").digital_ddh_d4.get(F),
+                 "foreign_flags": ty[ty["foreign_type_strain_d4>=70"].fillna("") != ""].strain.tolist()}
+
+# Main-text Table 1: one row per genome, the features a reader compares at a glance (core-tree order)
+from Bio import Phylo
+tree = Phylo.read(f"{R}/phylogeny/core_fasttree.nwk", "newick"); tree.root_at_midpoint(); tree.ladderize()
+order = [t.name for t in tree.get_terminals() if t.name in G]
+prok = {a: dict(l.strip().split(": ") for l in open(f"{R}/prokka/{a}/{a}.txt") if ": " in l) for a in order}
+bt = busco.set_index("accession")
+cr_i = cr.set_index("accession") if cr is not None else None
+intact = ph[ph.completeness == "intact"].groupby("accession").size() if ph is not None else pd.Series(dtype=int)
+is_n = {a: (len(pd.read_csv(f"{R}/isescan/{a}.tsv", sep="\t")) if os.path.exists(f"{R}/isescan/{a}.tsv") else None) for a in order}
+bg_hit = bg.groupby("accession").best_hit.agg(lambda x: "; ".join(sorted(set(x)))) if bg is not None and len(bg) else pd.Series(dtype=str)
+ty_i = ty.set_index("genome") if ty is not None and len(ty) else None
+rows = []
+for a in order:
+    r = {"Strain": strain(a), "Accession": a, "Isolation source": meta.niche.get(a, ""), "Country": str(meta.geo.get(a, "")).split(":")[0],
+         "Genome type": "MAG" if "_bin" in str(strain(a)) else "isolate", "Assembly level": meta.level.get(a, ""),
+         "Size (Mb)": round(meta["size"].get(a, 0) / 1e6, 2), "GC (%)": meta.gc.get(a), "Contigs": meta.contigs.get(a),
+         "BUSCO complete (%)": bt.complete.get(a), "CDS": int(prok[a].get("CDS", 0)), "tRNA": int(prok[a].get("tRNA", 0))}
+    if ty_i is not None: r["dDDH to closest type strain (%)"] = ty_i.digital_ddh_d4.get(a)
+    if cr_i is not None: r["Cas system"], r["CRISPR spacers"] = cr_i.cas_type.get(a), cr_i.spacers.get(a)
+    if ph is not None: r["Intact prophages"] = int(intact.get(a, 0))
+    r["IS elements"] = is_n[a]
+    if bg is not None: r["BAGEL4 bacteriocin hit"] = bg_hit.get(a, "")
+    r["Largest clonal group"] = "yes" if a in clonal else ""
+    rows.append(r)
+table1 = pd.DataFrame(rows)
+with pd.ExcelWriter(A.table1) as xw: table1.to_excel(xw, sheet_name="Table 1", index=False)
+
 isl = opt(f"{R}/brig/focal_unique_regions.tsv")
 if isl is not None: k["brig_focal_only_regions"] = isl.to_dict("records")
 
+# number sheets consecutively over the tables actually produced (a step switched off in config leaves no gap)
 with pd.ExcelWriter(A.xlsx) as xw:
-    for name, df in sheets.items(): df.to_excel(xw, sheet_name=name[:31], index=False)
+    for i, (name, df) in enumerate(sheets.items(), 1):
+        df.to_excel(xw, sheet_name=f"S{i} {name.split(' ', 1)[1]}"[:31], index=False)
 json.dump(k, open(A.json, "w"), indent=1, default=str)
 print(f"{len(sheets)} supplementary sheets; key numbers -> {A.json}")
