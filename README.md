@@ -23,7 +23,7 @@ First applied to *Liquorilactobacillus nagelii* (46 NCBI genomes, focal strain A
 | AMR | RGI + CARD (Strict/Perfect) | `results/rgi/` |
 | Plasmids | mash screen vs PLSDB 2024_05_31_v2 | `results/plsdb/` |
 | Genome comparison | BLASTn rings in the BRIG manner against the focal strain | `results/figures/fig10_brig.*`, `results/brig/` |
-| Report | Figures (PNG 300 dpi + PDF), `Supplementary_Tables.xlsx`, `key_numbers.json` | `results/figures/`, `results/report/` |
+| Report | One folder per tool with its tables and `figures/` (PNG 300 dpi + PDF); `Supplementary_Tables.xlsx`, `key_numbers.json` | **`results/paper/<NN_tool>/`** |
 | AI draft (optional) | Claude writes Results + figure legends from `key_numbers.json` only | `results/report/results_draft.md` |
 
 `docs/tools.md` maps each step to the paper it comes from and gives every threshold.

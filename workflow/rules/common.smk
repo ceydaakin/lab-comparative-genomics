@@ -20,7 +20,7 @@ def per_genome(pattern):
 
 
 def final_targets(wildcards):
-    t = ["results/figures/fig1_tree_ani.png", "results/report/Supplementary_Tables.xlsx", "results/brig/focal_unique_regions.tsv"]
+    t = ["results/paper"]
     if config["phylogeny"]["gubbins"]:
         t.append("results/phylogeny/core_fasttree_gubbins.nwk")
     if config["ai_report"]["enabled"]:

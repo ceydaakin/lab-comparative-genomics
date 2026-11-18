@@ -56,3 +56,17 @@ rule ai_report:
         "../envs/ai.yaml"
     shell:
         "python {SCRIPTS}/ai_report.py --numbers {input.numbers} --config '{params.cfg}' --model {params.model} --effort {params.effort} --out {output}"
+
+
+rule package:
+    """One folder per tool (tables + figures/ PNG and PDF) under results/paper; fails if a tool folder has no figure."""
+    input:
+        "results/figures/fig1_tree_ani.png",
+        "results/report/Supplementary_Tables.xlsx",
+        "results/brig/focal_unique_regions.tsv",
+    output:
+        directory("results/paper"),
+    conda:
+        "../envs/python.yaml"
+    shell:
+        "python {SCRIPTS}/package.py --results results --out {output}"

@@ -183,6 +183,79 @@ def fig_is():
     ax.spines[:].set_visible(False); ax.set_title("Insertion-sequence families per genome (ISEScan)", loc="left"); save(fig, "fig9_IS_elements")
 
 
-ALL = ["busco", "tree_ani", "pan", "pcoa", "cog", "crispr", "cazy", "prophage", "is"]
+
+def fig_prokka():
+    rows = []
+    for a in ORDER:
+        s = dict(l.strip().split(": ") for l in open(f"{R}/prokka/{a}/{a}.txt") if ": " in l)
+        rows.append({"acc": a, "CDS": int(s.get("CDS", 0)), "tRNA": int(s.get("tRNA", 0)), "Mb": int(s["bases"]) / 1e6})
+    t = pd.DataFrame(rows).set_index("acc")
+    fig, axes = plt.subplots(1, 3, figsize=(11, max(3, 0.2 * len(ORDER))), sharey=True, gridspec_kw={"width_ratios": [2, 1, 1]})
+    y = np.arange(len(ORDER))[::-1]
+    for ax, col, c, xl in zip(axes, ["CDS", "tRNA", "Mb"], [CAT[0], CAT[2], CAT[3]], ["protein-coding genes", "tRNA genes", "genome size (Mb)"]):
+        ax.barh(y, t[col], color=[CAT[1] if a == FOCAL else c for a in t.index], height=0.7)
+        ax.set_xlabel(xl); ax.grid(axis="x", color="#e5e4e0", lw=0.6); ax.set_axisbelow(True)
+    axes[0].set_yticks(y); axes[0].set_yticklabels([lab(a) for a in ORDER], fontsize=6.5); bold(axes[0], ORDER)
+    axes[0].set_title(f"Prokka annotation per genome ({lab(FOCAL)} in orange)", loc="left"); save(fig, "fig11_prokka_annotation")
+
+
+def fig_ani():
+    m = pd.read_csv(f"{R}/ani/ani_matrix.tsv", sep="\t", index_col=0).loc[ORDER, ORDER]
+    fig, ax = plt.subplots(figsize=(max(5, 0.24 * len(ORDER) + 3), max(4, 0.22 * len(ORDER) + 2)))
+    lo = np.floor(m.where(m < 100).min().min() * 2) / 2
+    im = ax.imshow(m.values, cmap="Blues", vmin=lo, vmax=100, aspect="auto")
+    ax.set_xticks(range(len(ORDER))); ax.set_xticklabels([lab(a) for a in ORDER], rotation=90, fontsize=6)
+    ax.set_yticks(range(len(ORDER))); ax.set_yticklabels([lab(a) for a in ORDER], fontsize=6); bold(ax, ORDER)
+    idx = [i for i, a in enumerate(ORDER) if a in CLONAL]
+    if idx: ax.add_patch(plt.Rectangle((min(idx) - 0.5, min(idx) - 0.5), len(idx), len(idx), fill=False, ec=CAT[1], lw=1.5))
+    plt.colorbar(im, ax=ax, fraction=0.04, label="ANI %")
+    ax.set_title(f"Pairwise ANI (skani); min {m.where(m < 100).min().min():.1f}%" + ("; box = largest clonal group" if idx else ""), loc="left")
+    save(fig, "fig12_ani_heatmap")
+
+
+def fig_bagel4():
+    b = pd.read_csv(f"{R}/bagel4/bagel4_summary.tsv", sep="\t")
+    cov = open(f"{R}/bagel4/coverage.txt").read().strip()
+    cnt = b.groupby("accession").size().reindex(ORDER, fill_value=0)
+    best = b.groupby("accession").best_hit.agg(lambda x: "; ".join(sorted(set(x)))).reindex(ORDER).fillna("")
+    fig, ax = plt.subplots(figsize=(8, max(3, 0.2 * len(ORDER)))); y = np.arange(len(ORDER))[::-1]
+    ax.barh(y, cnt.values, color=[CAT[1] if a == FOCAL else CAT[0] for a in ORDER], height=0.7)
+    for yi, n, h in zip(y, cnt.values, best.values):
+        if n: ax.text(n, yi, f"  {h}", va="center", fontsize=6.5)
+    ax.set_yticks(y); ax.set_yticklabels([lab(a) for a in ORDER], fontsize=6.5); bold(ax, ORDER)
+    ax.set_xlim(0, max(2, cnt.max() * 2.5)); ax.set_xlabel("BAGEL4 areas of interest (label = best core-peptide hit)")
+    ax.set_title(f"Bacteriocins and RiPPs (BAGEL4); {cov}", loc="left", fontsize=8); save(fig, "fig7_bagel4")
+
+
+def fig_rgi():
+    d = pd.read_csv(f"{R}/rgi/rgi_all.tsv", sep="\t")
+    cnt = d.groupby(["accession", "cut_off"]).size().unstack(fill_value=0).reindex(ORDER, fill_value=0)
+    fig, ax = plt.subplots(figsize=(7, max(3, 0.2 * len(ORDER)))); y = np.arange(len(ORDER))[::-1]; left = np.zeros(len(ORDER))
+    for c, col in [("Perfect", CAT[7]), ("Strict", CAT[3])]:
+        v = cnt[c].values if c in cnt else np.zeros(len(ORDER))
+        ax.barh(y, v, left=left, color=col, height=0.7, label=f"{c} hits"); left = left + v
+    ax.set_yticks(y); ax.set_yticklabels([lab(a) for a in ORDER], fontsize=6.5); bold(ax, ORDER)
+    ax.set_xlim(0, max(3, left.max() + 1)); ax.legend(frameon=False, loc="lower right", fontsize=7); ax.set_xlabel("CARD hits (RGI)")
+    perfect = int((d.cut_off == "Perfect").sum()) if len(d) else 0
+    ax.set_title(f"Antimicrobial resistance (RGI/CARD): {perfect} Perfect hits", loc="left"); save(fig, "fig14_card_rgi")
+
+
+def fig_plsdb():
+    p = pd.read_csv(f"{R}/plsdb/plsdb_hits.tsv", sep="\t")
+    p = p[p.accession.isin(ORDER) & (p.call == "present")]
+    fig, ax = plt.subplots(figsize=(max(6, 0.6 * max(1, p.plasmid.nunique()) + 4), max(3, 0.2 * len(ORDER))))
+    if len(p):
+        p = p.assign(label=p.plasmid + " (" + p.plasmid_host.fillna("?").str.replace("_", " ") + ", " + (p.plasmid_length / 1000).round(1).astype(str) + " kb)")
+        m = p.pivot_table(index="accession", columns="label", values="hash_fraction", aggfunc="max").reindex(ORDER)
+        im = ax.imshow(m.values, cmap="Blues", vmin=0.5, vmax=1, aspect="auto")
+        ax.set_xticks(range(m.shape[1])); ax.set_xticklabels(m.columns, rotation=60, ha="right", fontsize=6.5)
+        plt.colorbar(im, ax=ax, fraction=0.03, label="shared mash hashes")
+    else:
+        ax.text(0.5, 0.5, "no PLSDB plasmid detected", ha="center", transform=ax.transAxes); ax.set_xticks([])
+    ax.set_yticks(range(len(ORDER))); ax.set_yticklabels([lab(a) for a in ORDER], fontsize=6.5); bold(ax, ORDER)
+    ax.spines[:].set_visible(False); ax.set_title("PLSDB plasmids detected (mash screen)", loc="left"); save(fig, "fig15_plsdb")
+
+
+ALL = ["busco", "tree_ani", "ani", "prokka", "pan", "pcoa", "cog", "crispr", "cazy", "prophage", "is", "bagel4", "rgi", "plsdb"]
 for name in (A.names or ALL):
     globals()[f"fig_{name}"](); print("figure", name)
