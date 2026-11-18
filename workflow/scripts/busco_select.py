@@ -2,6 +2,7 @@
 Fails loudly if the focal genome does not pass, or if fewer than 3 genomes remain."""
 import argparse, json, os
 import pandas as pd
+from parsers import accession_from_busco_json
 
 p = argparse.ArgumentParser()
 p.add_argument("--summaries", nargs="+", required=True)
@@ -15,7 +16,7 @@ a = p.parse_args()
 
 rows = []
 for f in a.summaries:
-    acc = os.path.basename(f).removesuffix(".json")   # results/qc/busco/<accession>.json
+    acc = accession_from_busco_json(f)
     r = json.load(open(f))["results"]
     rows.append({"accession": acc, "busco": r["one_line_summary"], "complete": float(r["Complete percentage"]),
                  "duplicated": float(r["Multi copy percentage"]), "fragmented": float(r["Fragmented percentage"]),

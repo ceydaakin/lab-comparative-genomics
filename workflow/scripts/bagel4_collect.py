@@ -3,6 +3,7 @@ Core peptide = an AOI GeneTable row BAGEL4 colours as core (green) or that carri
 import argparse, os, urllib.request
 from html.parser import HTMLParser
 import pandas as pd
+from parsers import acc_from_upload, db_hits
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--sessions", nargs="*", default=[]); ap.add_argument("--genomes", required=True); ap.add_argument("--outdir", required=True)
@@ -10,31 +11,6 @@ args = ap.parse_args()
 OUT = args.outdir
 os.makedirs(f"{OUT}/raw", exist_ok=True)
 G = [l.strip() for l in open(args.genomes) if l.strip()]
-
-def db_hits(function):
-    """BAGEL4 writes 'score;Name' pairs glued together ('74.1;Mutacin_II166.2;Plantaricin_423').
-    Return [(score, name)]: each numeric token scores the next token; a float glued to a name's tail belongs to the next pair."""
-    toks = [t.strip() for t in function.split(";")]
-    out, score = [], None
-    def tail_float(t):
-        for i in range(len(t)):
-            try:
-                v = float(t[i:])
-                return (t[:i], v) if "." in t[i:] and i > 0 else None
-            except ValueError:
-                continue
-        return None
-    for t in toks:
-        if score is not None:
-            split = tail_float(t)
-            name, nxt = (split if split else (t, None))
-            out.append((score, name)); score = nxt; continue
-        try:
-            score = float(t) if "." in t else None
-        except ValueError:
-            score = None
-    return out
-
 
 class Links(HTMLParser):
     def __init__(self):
@@ -45,12 +21,6 @@ class Links(HTMLParser):
             self.files.append(href)
 
 
-
-
-def acc_from_upload(name):
-    """BAGEL4 drops the underscore from uploaded file names: GCA061326205.1.fna -> GCA_061326205.1"""
-    stem = name.removesuffix(".fna")
-    return "GCA_" + stem[3:] if stem.startswith("GCA") and not stem.startswith("GCA_") else stem
 
 
 rows, maps = [], []

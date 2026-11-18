@@ -1,0 +1,30 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pytest
+      - run: python -m pytest .tests/unit -q
+
+  lint-and-dry-run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install "snakemake>=8,<10" pandas
+      - name: snakemake --lint
+        run: snakemake --lint --configfile .tests/config_test.yaml
+      - name: dry run of the test configuration
+        run: snakemake -n --configfile .tests/config_test.yaml

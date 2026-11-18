@@ -3,6 +3,7 @@ Prokka's UniProt/HAMAP names miss type I-B Cas proteins (they come out 'hypothet
 hit (>= 50% id, >= 70% cov, done upstream) to Cas-named NCBI PGAP proteins; types by signature genes (Makarova et al. 2020)."""
 import argparse, os
 import pandas as pd
+from parsers import cas_type
 
 p = argparse.ArgumentParser()
 p.add_argument("--minced", nargs="+", required=True, help="MinCED GFF per genome (<acc>.gff)")
@@ -16,14 +17,6 @@ h = pd.read_csv(a.hits, sep="\t", header=None, names=["query", "target", "pid", 
 h["genome"] = h["query"].str.split("|").str[0]
 h["product"] = h.target.map(names).str.replace("MAG: ", "", regex=False)
 h.to_csv(a.genes_out, sep="\t", index=False)
-
-
-def cas_type(products):
-    s = " ".join(products).lower(); t = []
-    if "cas3" in s or "cst" in s or "cas8b" in s or "i-b" in s: t.append("I-B")
-    if "cas9" in s or "csn2" in s: t.append("II-A")
-    if "csm" in s or "cas10" in s or "iii-a" in s: t.append("III-A")
-    return " + ".join(t) or "fragment"
 
 
 rows = []
